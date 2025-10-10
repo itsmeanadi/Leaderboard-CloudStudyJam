@@ -5,8 +5,8 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
-  title: "JGEC Leaderboard",
-  description: "Google Cloud Study Jam Leaderboard for JGEC",
+  title: "GDGoC IET Leaderboard",
+  description: "Google Cloud Study Jam Leaderboard for GDGoC IET",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

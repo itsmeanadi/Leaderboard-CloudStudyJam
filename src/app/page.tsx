@@ -12,7 +12,7 @@ import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { LeaderboardEntry, FrozenUser } from "@/lib/utils";
 
-import { Loader2 } from "lucide-react";
+import { Loader2, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function Home() {
@@ -26,6 +26,7 @@ export default function Home() {
     key: 'rank',
     direction: 'asc'
   });
+  const [visibleCount, setVisibleCount] = useState(50); // Initially show top 50
 
   const isMobile = useIsMobile();
 
@@ -88,7 +89,19 @@ export default function Home() {
     const sortableData = [...leaderboardData];
     
     sortableData.sort((a, b) => {
-      // Handle different data types
+      // Special handling for rank sorting to ensure 1st place shows first
+      if (sortConfig.key === 'rank') {
+        const rankA = a.rank;
+        const rankB = b.rank;
+        
+        if (sortConfig.direction === 'asc') {
+          return rankA - rankB; // 1, 2, 3, ... (1st place first)
+        } else {
+          return rankB - rankA; // ..., 3, 2, 1 (last place first)
+        }
+      }
+      
+      // Handle different data types for other columns
       let aValue: string | number = a[sortConfig.key as keyof LeaderboardEntry] as string | number;
       let bValue: string | number = b[sortConfig.key as keyof LeaderboardEntry] as string | number;
       
@@ -125,6 +138,18 @@ export default function Home() {
     );
   }, [sortedLeaderboardData, searchQuery]);
 
+  const visibleLeaderboardData = useMemo(() => {
+    return filteredLeaderboardData.slice(0, visibleCount);
+  }, [filteredLeaderboardData, visibleCount]);
+
+  const showMore = () => {
+    setVisibleCount(prev => prev + 50);
+  };
+
+  const showAll = () => {
+    setVisibleCount(filteredLeaderboardData.length);
+  };
+
   const getRankBadge = (rank: number) => {
     if (rank === 1) return <span>🥇</span>;
     if (rank === 2) return <span>🥈</span>;
@@ -150,10 +175,13 @@ export default function Home() {
 
   return (
     <div className="flex min-h-screen flex-col p-4">
-      <header className="flex items-center justify-between mb-4">
+      <header className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6 p-4 bg-card rounded-lg shadow">
         <div className="flex items-center gap-4">
-          <Image src="/IETDAVV_Logo.png" alt="IET DAVV Logo" width={64} height={64} />
-          <h1 className="text-3xl font-bold">IET DAVV Study Jam Leaderboard</h1>
+          <Image src="/IETDAVV_Logo.png" alt="GDGoC IET Logo" width={64} height={64} />
+          <div>
+            <h1 className="text-2xl font-bold">GDGoC IET Study Jam Leaderboard</h1>
+            <p className="text-sm text-muted-foreground">Track participant progress and achievements</p>
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <ThemeToggle />
@@ -179,71 +207,123 @@ export default function Home() {
         </div>
       </header>
 
-      {/* Search Bar */}
-      <SearchBar 
-        value={searchQuery} 
-        onChange={setSearchQuery} 
-      />
+      {/* Dashboard Content */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left Column - Search and Sort */}
+        <div className="lg:col-span-1 space-y-6">
+          {/* Search Bar */}
+          <div className="bg-card rounded-lg shadow p-4">
+            <h2 className="text-lg font-semibold mb-3">Search Participants</h2>
+            <SearchBar 
+              value={searchQuery} 
+              onChange={setSearchQuery} 
+            />
+          </div>
 
-      {/* Sort Controls */}
-      <div className="flex flex-wrap gap-2 mb-4">
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={() => handleSort('rank')}
-          className="flex items-center gap-1"
-        >
-          Rank{getSortIndicator('rank')}
-        </Button>
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={() => handleSort('User Name')}
-          className="flex items-center gap-1"
-        >
-          Name{getSortIndicator('User Name')}
-        </Button>
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={() => handleSort('# of Skill Badges Completed')}
-          className="flex items-center gap-1"
-        >
-          Skill Badges{getSortIndicator('# of Skill Badges Completed')}
-        </Button>
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={() => handleSort('# of Arcade Games Completed')}
-          className="flex items-center gap-1"
-        >
-          Arcade Games{getSortIndicator('# of Arcade Games Completed')}
-        </Button>
+          {/* Sort Controls */}
+          <div className="bg-card rounded-lg shadow p-4">
+            <h2 className="text-lg font-semibold mb-3">Sort Options</h2>
+            <div className="flex flex-wrap gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => handleSort('rank')}
+                className="flex items-center gap-1"
+              >
+                Rank{getSortIndicator('rank')}
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => handleSort('User Name')}
+                className="flex items-center gap-1"
+              >
+                Name{getSortIndicator('User Name')}
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => handleSort('# of Skill Badges Completed')}
+                className="flex items-center gap-1"
+              >
+                Skill Badges{getSortIndicator('# of Skill Badges Completed')}
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => handleSort('# of Arcade Games Completed')}
+                className="flex items-center gap-1"
+              >
+                Arcade Games{getSortIndicator('# of Arcade Games Completed')}
+              </Button>
+            </div>
+          </div>
+
+          {/* Statistics */}
+          <div className="bg-card rounded-lg shadow p-4">
+            <h2 className="text-lg font-semibold mb-3">Leaderboard Statistics</h2>
+            <LeaderboardStats data={leaderboardData} />
+          </div>
+        </div>
+
+        {/* Right Column - Leaderboard */}
+        <div className="lg:col-span-2">
+          <div className="bg-card rounded-lg shadow p-4 h-full flex flex-col">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-semibold">Participant Rankings</h2>
+              <div className="text-sm text-muted-foreground">
+                Showing {visibleLeaderboardData.length} of {filteredLeaderboardData.length} participants
+              </div>
+            </div>
+            
+            <div className="flex-grow">
+              {isMobile ? (
+                <div className="space-y-4">
+                  <LeaderboardCard
+                    data={visibleLeaderboardData}
+                    getRankBadge={getRankBadge}
+                  />
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <LeaderboardTable
+                    data={visibleLeaderboardData}
+                    getRankBadge={getRankBadge}
+                    isMobile={isMobile}
+                  />
+                </div>
+              )}
+            </div>
+            
+            {/* Load More Button */}
+            {visibleCount < filteredLeaderboardData.length && (
+              <div className="flex flex-col items-center gap-2 mt-6 pt-4 border-t">
+                <Button 
+                  variant="outline" 
+                  onClick={showMore}
+                  className="flex items-center gap-2"
+                >
+                  View More <ChevronDown className="h-4 w-4" />
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  onClick={showAll}
+                  className="text-xs text-muted-foreground"
+                >
+                  View All ({filteredLeaderboardData.length} total)
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
-
-      {/* Statistics */}
-      <LeaderboardStats data={leaderboardData} />
-
-      {isMobile ? (
-        <LeaderboardCard
-          data={filteredLeaderboardData}
-          frozenUsers={frozenUsers}
-          getRankBadge={getRankBadge}
-        />
-      ) : (
-        <LeaderboardTable
-          data={filteredLeaderboardData}
-          frozenUsers={frozenUsers}
-          getRankBadge={getRankBadge}
-          isMobile={isMobile}
-        />
-      )}
       
       {dataSaving && (
-        <div className="fixed bottom-4 right-4 bg-primary text-primary-foreground px-4 py-2 rounded-md shadow-lg">
+        <div className="fixed bottom-4 right-4 bg-primary text-primary-foreground px-4 py-2 rounded-md shadow-lg z-50">
           Saving data...
         </div>
       )}
     </div>
   );
+
 }

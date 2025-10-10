@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { calculateLeaderboardStats } from "@/lib/leaderboard-utils";
+import { calculateLeaderboardStats, getTopUsers } from "@/lib/leaderboard-utils";
 import type { LeaderboardEntry } from "@/lib/utils";
 
 interface LeaderboardStatsProps {
@@ -10,36 +10,33 @@ interface LeaderboardStatsProps {
 }
 
 const LeaderboardStats: React.FC<LeaderboardStatsProps> = ({ data }) => {
-  const stats = calculateLeaderboardStats(data);
+  // Get only the top 50 participants for statistics
+  const top50Participants = getTopUsers(data, 50);
+  const stats = calculateLeaderboardStats(top50Participants);
 
   return (
-    <Card className="mb-6">
-      <CardHeader>
-        <CardTitle>Leaderboard Statistics</CardTitle>
-      </CardHeader>
-      <CardContent className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <StatCard 
-          title="Total Users" 
-          value={stats.totalUsers.toString()} 
-          description="Registered participants" 
-        />
-        <StatCard 
-          title="Completed" 
-          value={stats.completedUsers.toString()} 
-          description="Fully completed" 
-        />
-        <StatCard 
-          title="Avg. Skill Badges" 
-          value={stats.averageSkillBadges.toFixed(1)} 
-          description="Per user" 
-        />
-        <StatCard 
-          title="Avg. Arcade Games" 
-          value={stats.averageArcadeGames.toFixed(1)} 
-          description="Per user" 
-        />
-      </CardContent>
-    </Card>
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+      <StatCard 
+        title="Total Users" 
+        value={stats.totalUsers.toString()} 
+        description="Top 50 participants" 
+      />
+      <StatCard 
+        title="Completed" 
+        value={stats.completedUsers.toString()} 
+        description="Fully completed" 
+      />
+      <StatCard 
+        title="Avg. Skill Badges" 
+        value={stats.averageSkillBadges.toFixed(1)} 
+        description="Per top user" 
+      />
+      <StatCard 
+        title="Avg. Arcade Games" 
+        value={stats.averageArcadeGames.toFixed(1)} 
+        description="Per top user" 
+      />
+    </div>
   );
 };
 
@@ -50,9 +47,9 @@ interface StatCardProps {
 }
 
 const StatCard: React.FC<StatCardProps> = ({ title, value, description }) => (
-  <div className="flex flex-col items-center justify-center rounded-lg bg-muted p-4 text-center">
-    <div className="text-2xl font-bold">{value}</div>
-    <div className="text-sm text-muted-foreground">{title}</div>
+  <div className="flex flex-col items-center justify-center rounded-lg bg-muted p-3 text-center h-full">
+    <div className="text-xl font-bold">{value}</div>
+    <div className="text-xs text-muted-foreground mt-1">{title}</div>
     <div className="mt-1 text-xs text-muted-foreground/80">{description}</div>
   </div>
 );

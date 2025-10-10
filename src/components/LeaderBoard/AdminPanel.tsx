@@ -86,6 +86,15 @@ const AdminPanel: React.FC<Props> = ({ isAdmin, setIsAdmin, onCSVUpload, onLogou
     });
   };
 
+  const cleanCSVValue = (value: string): string => {
+    // Remove surrounding quotes if present and trim whitespace
+    let cleanValue = value.trim();
+    if (cleanValue.startsWith('"') && cleanValue.endsWith('"')) {
+      cleanValue = cleanValue.substring(1, cleanValue.length - 1);
+    }
+    return cleanValue;
+  };
+
   const handleFileUpload = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -128,7 +137,7 @@ const AdminPanel: React.FC<Props> = ({ isAdmin, setIsAdmin, onCSVUpload, onLogou
           const obj: CSVRow = {};
           row.forEach((val, idx) => {
             if (headers[idx]) {
-              obj[headers[idx].trim()] = val.trim();
+              obj[headers[idx].trim()] = cleanCSVValue(val);
             }
           });
           return obj;
@@ -304,151 +313,178 @@ const AdminPanel: React.FC<Props> = ({ isAdmin, setIsAdmin, onCSVUpload, onLogou
   }
 
   return (
-    <Card className="mb-6">
-      <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+    <Card className="w-full max-w-2xl">
+      <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b">
         <div>
-          <CardTitle className="text-xl">Admin Dashboard</CardTitle>
+          <CardTitle className="text-xl flex items-center gap-2">
+            <span className="bg-primary text-primary-foreground p-2 rounded-lg">Admin</span>
+            Dashboard
+          </CardTitle>
           <CardDescription>Manage leaderboard data and settings</CardDescription>
         </div>
         <Button variant="outline" size="sm" className="flex items-center gap-2" onClick={() => { setIsAdmin(false); onLogout(); }}>
           <LogOut className="h-4 w-4" /> Logout
         </Button>
       </CardHeader>
-      <CardContent>
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-6">
-          <div className="grid w-full items-center gap-1.5">
-            <Label htmlFor="csv-upload" className="text-sm font-medium">
-              Update Leaderboard Data
-            </Label>
-            <p className="text-sm text-muted-foreground">
-              Upload a CSV file with participant data to update the leaderboard (automatically sorted by completion)
-            </p>
-          </div>
-          <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
-            <Input
-              id="csv-upload"
-              type="file"
-              accept=".csv"
-              onChange={handleFileUpload}
-              disabled={isLoading}
-              className="hidden"
-            />
-            <Button asChild variant="default" size="sm" disabled={isLoading}>
-              <Label 
-                htmlFor="csv-upload" 
-                className="cursor-pointer flex items-center gap-2 w-full sm:w-auto justify-center"
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Processing...
-                  </>
-                ) : (
-                  <>
-                    <Upload className="h-4 w-4" />
-                    Upload CSV
-                  </>
-                )}
-              </Label>
-            </Button>
-          </div>
-        </div>
-
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-6 pt-4 border-t">
-          <div className="grid w-full items-center gap-1.5">
-            <Label className="text-sm font-medium">
-              Google Sheets Integration
-            </Label>
-            <p className="text-sm text-muted-foreground">
-              Connect directly to a Google Sheet to automatically sync leaderboard data
-            </p>
-          </div>
-          <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
-            <Button 
-              variant="secondary" 
-              size="sm" 
-              className="flex items-center gap-2 w-full sm:w-auto"
-              onClick={() => setShowGoogleSheetForm(!showGoogleSheetForm)}
-              disabled={isLoading}
-            >
-              <Link className="h-4 w-4" />
-              Connect Google Sheet
-            </Button>
-          </div>
-        </div>
-
-        {showGoogleSheetForm && (
-          <div className="mb-6 p-4 bg-muted rounded-lg">
-            <div className="grid w-full items-center gap-4">
-              <div className="flex flex-col space-y-1.5">
-                <Label htmlFor="google-sheet-url">
-                  Google Sheet URL
-                </Label>
-                <Input
-                  id="google-sheet-url"
-                  placeholder="https://docs.google.com/spreadsheets/d/..."
-                  value={googleSheetUrl}
-                  onChange={(e) => setGoogleSheetUrl(e.target.value)}
-                  disabled={isLoading}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Make sure your Google Sheet is publicly accessible or shared with the service account
+      <CardContent className="pt-6">
+        <div className="space-y-6">
+          {/* CSV Upload Section */}
+          <div className="border rounded-lg p-4">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="bg-primary/10 p-2 rounded-lg">
+                <Upload className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h3 className="font-semibold">Update Leaderboard Data</h3>
+                <p className="text-sm text-muted-foreground">
+                  Upload a CSV file with participant data to update the leaderboard (automatically sorted by completion)
                 </p>
               </div>
-              <div className="flex justify-end gap-2">
-                <Button 
-                  variant="outline" 
-                  onClick={() => setShowGoogleSheetForm(false)}
-                  disabled={isLoading}
-                >
-                  Cancel
-                </Button>
-                <Button 
-                  onClick={handleGoogleSheetUpload}
-                  disabled={isLoading}
+            </div>
+            <div className="flex flex-col sm:flex-row items-center gap-3 mt-4">
+              <Input
+                id="csv-upload"
+                type="file"
+                accept=".csv"
+                onChange={handleFileUpload}
+                disabled={isLoading}
+                className="hidden"
+              />
+              <Button asChild variant="default" size="sm" disabled={isLoading} className="w-full sm:w-auto">
+                <Label 
+                  htmlFor="csv-upload" 
+                  className="cursor-pointer flex items-center gap-2 justify-center"
                 >
                   {isLoading ? (
                     <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Connecting...
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Processing...
                     </>
                   ) : (
-                    "Connect Sheet"
+                    <>
+                      <Upload className="h-4 w-4" />
+                      Upload CSV
+                    </>
                   )}
-                </Button>
+                </Label>
+              </Button>
+            </div>
+          </div>
+
+          {/* Google Sheets Section */}
+          <div className="border rounded-lg p-4">
+            <div className="flex items-start gap-3 mb-3">
+              <div className="bg-primary/10 p-2 rounded-lg mt-0.5">
+                <Link className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h3 className="font-semibold">Google Sheets Integration</h3>
+                <p className="text-sm text-muted-foreground">
+                  Connect directly to a Google Sheet to automatically sync leaderboard data
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-col sm:flex-row items-center gap-3 mt-4">
+              <Button 
+                variant="secondary" 
+                size="sm" 
+                className="flex items-center gap-2 w-full sm:w-auto"
+                onClick={() => setShowGoogleSheetForm(!showGoogleSheetForm)}
+                disabled={isLoading}
+              >
+                <Link className="h-4 w-4" />
+                Connect Google Sheet
+              </Button>
+            </div>
+          </div>
+
+          {/* Google Sheet Form */}
+          {showGoogleSheetForm && (
+            <div className="border rounded-lg p-4 bg-muted/30">
+              <h3 className="font-semibold mb-3">Google Sheet URL</h3>
+              <div className="space-y-4">
+                <div className="flex flex-col space-y-2">
+                  <Input
+                    id="google-sheet-url"
+                    placeholder="https://docs.google.com/spreadsheets/d/..."
+                    value={googleSheetUrl}
+                    onChange={(e) => setGoogleSheetUrl(e.target.value)}
+                    disabled={isLoading}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Make sure your Google Sheet is publicly accessible or shared with the service account
+                  </p>
+                </div>
+                <div className="flex flex-col sm:flex-row justify-end gap-2">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setShowGoogleSheetForm(false)}
+                    disabled={isLoading}
+                    className="w-full sm:w-auto"
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    onClick={handleGoogleSheetUpload}
+                    disabled={isLoading}
+                    className="w-full sm:w-auto"
+                  >
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Connecting...
+                      </>
+                    ) : (
+                      "Connect Sheet"
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Status Messages */}
+          {uploadStatus && (
+            <div className={`p-4 rounded-lg text-sm ${
+              uploadStatus.type === 'success' 
+                ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' 
+                : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
+            }`}>
+              {uploadStatus.message}
+            </div>
+          )}
+
+          {/* Information Section */}
+          <div className="border rounded-lg p-4">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="bg-primary/10 p-2 rounded-lg">
+                <Link className="h-5 w-5 text-primary" />
+              </div>
+              <h3 className="font-semibold">Information</h3>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <h4 className="font-medium text-sm mb-2">Sorting Information</h4>
+                <p className="text-xs text-muted-foreground mb-2">
+                  Data is automatically sorted by completion metrics in descending order:
+                </p>
+                <ul className="text-xs text-muted-foreground list-disc pl-5 space-y-1">
+                  <li>Primary: # of Skill Badges Completed (highest first)</li>
+                  <li>Secondary: # of Arcade Games Completed (highest first)</li>
+                  <li>Ranks are automatically updated based on this sorting</li>
+                </ul>
+              </div>
+              
+              <div>
+                <h4 className="font-medium text-sm mb-2">CSV Format Requirements</h4>
+                <ul className="text-xs text-muted-foreground list-disc pl-5 space-y-1">
+                  <li>Must include columns: &quot;User Name&quot;, &quot;User Email&quot;</li>
+                  <li>Optional columns: &quot;rank&quot;, &quot;# of Skill Badges Completed&quot;, &quot;# of Arcade Games Completed&quot;</li>
+                  <li>&quot;All Skill Badges &amp; Games Completed&quot;, &quot;Google Cloud Skills Boost Profile URL&quot;</li>
+                </ul>
               </div>
             </div>
           </div>
-        )}
-
-        {uploadStatus && (
-          <div className={`mt-4 p-3 rounded-md text-sm ${
-            uploadStatus.type === 'success' 
-              ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' 
-              : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
-          }`}>
-            {uploadStatus.message}
-          </div>
-        )}
-        <div className="mt-4 pt-4 border-t">
-          <h3 className="text-sm font-medium mb-2 flex items-center gap-2">
-            <Link className="h-4 w-4" />
-            Sorting Information
-          </h3>
-          <p className="text-xs text-muted-foreground mb-2">
-            Data is automatically sorted by completion metrics in descending order:
-          </p>
-          <ul className="text-xs text-muted-foreground list-disc pl-5 space-y-1">
-            <li>Primary: # of Skill Badges Completed (highest first)</li>
-            <li>Secondary: # of Arcade Games Completed (highest first)</li>
-            <li>Ranks are automatically updated based on this sorting</li>
-          </ul>
-          <h3 className="text-sm font-medium mb-2 mt-3">CSV Format Requirements</h3>
-          <ul className="text-xs text-muted-foreground list-disc pl-5 space-y-1">
-            <li>Must include columns: &quot;User Name&quot;, &quot;User Email&quot;</li>
-            <li>Optional columns: &quot;rank&quot;, &quot;# of Skill Badges Completed&quot;, &quot;# of Arcade Games Completed&quot;</li>
-            <li>&quot;All Skill Badges &amp; Games Completed&quot;, &quot;Google Cloud Skills Boost Profile URL&quot;</li>
-          </ul>
         </div>
       </CardContent>
     </Card>

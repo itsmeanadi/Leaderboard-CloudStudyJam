@@ -1,4 +1,4 @@
-# IET DAVV Study Jam Leaderboard
+# GDGoC IET Study Jam Leaderboard
 
 A leaderboard application built with Next.js for tracking Google Cloud Study Jam participants.
 
