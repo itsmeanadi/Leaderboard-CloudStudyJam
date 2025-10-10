@@ -175,6 +175,32 @@ export default function Home() {
 
   return (
     <div className="flex min-h-screen flex-col p-4">
+      {/* Top Bar for Mobile - Admin and Theme Controls */}
+      <div className="flex sm:hidden items-center justify-between mb-4 p-2 bg-card rounded-lg shadow">
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          {isAdmin ? (
+            <AdminPanel
+              isAdmin={isAdmin}
+              setIsAdmin={setIsAdmin}
+              onCSVUpload={async (data) => {
+                await saveLeaderboardData(data, frozenUsers);
+              }}
+              onLogout={() => console.log("Logged out")}
+            />
+          ) : (
+            <AdminPanel
+              isAdmin={isAdmin}
+              setIsAdmin={setIsAdmin}
+              onCSVUpload={async (data) => {
+                await saveLeaderboardData(data, frozenUsers);
+              }}
+              onLogout={() => {}}
+            />
+          )}
+        </div>
+      </div>
+
       <header className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6 p-4 bg-card rounded-lg shadow">
         <div className="flex items-center gap-4">
           <Image src="/IETDAVV_Logo.png" alt="GDGoC IET Logo" width={64} height={64} />
@@ -183,7 +209,7 @@ export default function Home() {
             <p className="text-sm text-muted-foreground">Track participant progress and achievements</p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="hidden sm:flex items-center gap-2">
           <ThemeToggle />
           {isAdmin ? (
             <AdminPanel

@@ -18,11 +18,11 @@ const LeaderboardTable: React.FC<Props> = ({ data, getRankBadge, isMobile }) => 
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-[80px] text-center">Rank</TableHead>
-            <TableHead className="text-center">User</TableHead>
-            <TableHead className="text-center">Skill Badges</TableHead>
-            {!isMobile && <TableHead className="text-center hidden sm:table-cell">Arcade Games</TableHead>}
-            <TableHead className="w-[80px] text-center">Profile</TableHead>
+            <TableHead className="w-[80px] text-center align-middle">Rank</TableHead>
+            <TableHead className="text-center align-middle">User</TableHead>
+            <TableHead className="text-center align-middle">Skill Badges</TableHead>
+            {!isMobile && <TableHead className="text-center align-middle hidden sm:table-cell">Arcade Games</TableHead>}
+            <TableHead className="w-[80px] text-center align-middle">Profile</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -35,28 +35,28 @@ const LeaderboardTable: React.FC<Props> = ({ data, getRankBadge, isMobile }) => 
 
               return (
                 <TableRow key={safeKey} className={isCompleted ? "bg-green-100 dark:bg-green-900/30" : ""}>
-                  <TableCell className="font-bold text-center text-lg">
+                  <TableCell className="font-bold text-center align-middle text-lg">
                     <div className="flex items-center justify-center">
                       {getRankBadge(displayRank)}
                     </div>
                   </TableCell>
-                  <TableCell className="text-center">
+                  <TableCell className="text-center align-middle">
                     <div className="font-medium">{user["User Name"]}</div>
                     <div className="hidden text-sm text-muted-foreground sm:inline">{user["User Email"]}</div>
                   </TableCell>
-                  <TableCell className="text-center font-mono text-base">
+                  <TableCell className="text-center align-middle font-mono text-base">
                     <div className="flex items-center justify-center">
                       {user["# of Skill Badges Completed"]}
                     </div>
                   </TableCell>
                   {!isMobile && (
-                    <TableCell className="text-center font-mono text-base hidden sm:table-cell">
+                    <TableCell className="text-center align-middle font-mono text-base hidden sm:table-cell">
                       <div className="flex items-center justify-center">
                         {user["# of Arcade Games Completed"]}
                       </div>
                     </TableCell>
                   )}
-                  <TableCell className="text-center">
+                  <TableCell className="text-center align-middle">
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <a
@@ -78,7 +78,7 @@ const LeaderboardTable: React.FC<Props> = ({ data, getRankBadge, isMobile }) => 
             })
           ) : (
             <TableRow>
-              <TableCell colSpan={isMobile ? 4 : 5} className="h-24 text-center">
+              <TableCell colSpan={isMobile ? 4 : 5} className="h-24 text-center align-middle">
                 {data.length === 0 ? "No data available. Please upload a CSV file." : ""}
               </TableCell>
             </TableRow>

@@ -23,13 +23,15 @@ const LeaderboardCard: React.FC<Props> = ({ data, getRankBadge }) => {
 
           return (
             <Card key={safeKey} className={isCompleted ? "bg-green-100 dark:bg-green-900/30" : ""}>
-              <CardHeader className="flex flex-row items-center gap-4 p-4">
-                <div className="font-bold text-lg flex items-center justify-center w-12 h-12 rounded-full bg-muted">
-                  {getRankBadge(displayRank)}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="font-medium truncate">{user["User Name"]}</div>
-                  <div className="text-sm text-muted-foreground truncate">{user["User Email"]}</div>
+              <CardHeader className="flex flex-row items-center justify-between gap-4 p-4">
+                <div className="flex items-center gap-4">
+                  <div className="font-bold text-lg flex items-center justify-center w-12 h-12 rounded-full bg-muted">
+                    {getRankBadge(displayRank)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium truncate">{user["User Name"]}</div>
+                    <div className="text-sm text-muted-foreground truncate">{user["User Email"]}</div>
+                  </div>
                 </div>
                 <Tooltip>
                   <TooltipTrigger asChild>
