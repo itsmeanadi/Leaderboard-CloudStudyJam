@@ -12,10 +12,10 @@ export async function GET() {
     return NextResponse.json({ 
       message: 'Database initialized successfully' 
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error initializing database:', error);
     return NextResponse.json(
-      { error: 'Failed to initialize database' },
+      { error: 'Failed to initialize database', details: error.message || 'Unknown error' },
       { status: 500 }
     );
   }

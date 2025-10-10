@@ -1,4 +1,4 @@
-import { connectToDatabase, getLeaderboardCollection, getFrozenUsersCollection } from '../lib/db';
+const { connectToDatabase, getLeaderboardCollection, getFrozenUsersCollection } = require('../lib/db');
 
 async function seedDatabase() {
   try {

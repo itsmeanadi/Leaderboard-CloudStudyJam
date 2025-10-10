@@ -55,7 +55,6 @@ export default function Home() {
     }, [fetchLeaderboard]);
 
     const saveLeaderboardData = useCallback(async (entries: LeaderboardEntry[], frozen: Record<string, FrozenUser>) => {
-        // ... (saveLeaderboardData logic remains the same)
         try {
             setDataSaving(true);
             const res = await fetch("/api/leaderboard", {
@@ -67,15 +66,17 @@ export default function Home() {
             });
             
             if (!res.ok) {
-                throw new Error("Failed to save leaderboard data");
+                const errorData = await res.json().catch(() => ({}));
+                console.error("Server error response:", errorData);
+                throw new Error(`Failed to save leaderboard data: ${res.status} ${res.statusText}`);
             }
             
             const data = await res.json();
             setLeaderboardData(data.entries);
             setFrozenUsers(data.frozenUsers);
-        } catch (error) {
+        } catch (error: any) {
             console.error("Save error:", error);
-            alert("Failed to save leaderboard data");
+            alert(`Failed to save leaderboard data: ${error.message || error}`);
         } finally {
             setDataSaving(false);
         }

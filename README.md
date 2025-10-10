@@ -75,7 +75,34 @@ Note: Environment variables prefixed with `NEXT_PUBLIC_` will be embedded into t
 
 ### MongoDB Configuration
 
-For production, it's recommended to use a cloud MongoDB service like MongoDB Atlas rather than a local database. Update the `MONGODB_URI` environment variable with your cloud database connection string.
+For production, it's recommended to use a cloud MongoDB service like MongoDB Atlas rather than a local database.
+
+To use MongoDB Atlas:
+
+1. Log in to your MongoDB Atlas account
+2. Select your cluster
+3. Click "Connect"
+4. Choose "Connect your application"
+5. Copy the connection string and replace `<password>` with your actual password
+6. Replace `<dbname>` with your database name (e.g., `leaderboard`)
+7. Update the `MONGODB_URI` environment variable with your MongoDB Atlas connection string
+8. Make sure your IP address is whitelisted in MongoDB Atlas
+9. Ensure your database user has read/write permissions
+
+Example connection string:
+```
+MONGODB_URI=mongodb+srv://anadisharma44_db_user:your_password@your-cluster-name.mongodb.net/leaderboard?retryWrites=true&w=majority&appName=Cluster0
+```
+
+### SSL/TLS Connection Issues
+
+If you encounter SSL/TLS connection errors:
+
+1. Ensure your system has the latest certificates
+2. Update your Node.js to the latest LTS version
+3. Try connecting with relaxed SSL settings for testing (NOT recommended for production)
+4. Check your firewall settings
+5. Verify your system's OpenSSL configuration
 
 ## Usage
 

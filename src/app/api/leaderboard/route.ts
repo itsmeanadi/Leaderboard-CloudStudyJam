@@ -101,10 +101,10 @@ export async function POST(request: Request) {
       })),
       frozenUsers: updatedFrozenUsers
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error updating leaderboard data:', error);
     return NextResponse.json(
-      { error: 'Failed to update leaderboard data' },
+      { error: 'Failed to update leaderboard data', details: error.message || 'Unknown error' },
       { status: 500 }
     );
   }

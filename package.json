@@ -7,7 +7,14 @@
     "build": "next build --turbopack",
     "start": "next start",
     "lint": "eslint",
-    "seed": "ts-node src/scripts/seed-database.ts"
+    "seed": "ts-node --compilerOptions '{\"module\":\"commonjs\"}' src/scripts/seed-database.ts",
+    "test-db": "node src/scripts/test-db.js",
+    "test-atlas": "node src/scripts/test-atlas.js",
+    "encode-uri": "node src/scripts/encode-mongodb-uri.js",
+    "diagnose-mongo": "node src/scripts/diagnose-mongodb.js",
+    "test-mongo-atlas": "node src/scripts/test-mongodb-atlas.js",
+    "debug-mongo": "node src/scripts/debug-mongodb.js",
+    "test-mongo-insecure": "node src/scripts/test-mongo-insecure.js"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.15",
@@ -17,10 +24,11 @@
     "@shadcn/ui": "^0.0.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "dotenv": "^17.2.3",
     "framer-motion": "^12.23.23",
     "googleapis": "^162.0.0",
     "lucide-react": "^0.545.0",
-    "mongodb": "^6.12.0",
+    "mongodb": "^6.20.0",
     "next": "^15.5.4",
     "papaparse": "^5.5.3",
     "react": "^19.1.0",

@@ -1,4 +1,4 @@
-import { MongoClient, Db } from 'mongodb';
+import { MongoClient, Db, ServerApiVersion } from 'mongodb';
 
 // MongoDB connection URI - replace with your actual MongoDB URI
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/leaderboard';
@@ -20,11 +20,24 @@ export async function connectToDatabase() {
   try {
     // Create a new MongoClient with proper options for production
     const client = new MongoClient(MONGODB_URI, {
+      serverApi: {
+        version: ServerApiVersion.v1,
+        strict: true,
+        deprecationErrors: true,
+      },
       connectTimeoutMS: 10000, // 10 seconds
       serverSelectionTimeoutMS: 10000, // 10 seconds
       socketTimeoutMS: 20000, // 20 seconds
       maxPoolSize: 10, // Maximum number of connections in the connection pool
       minPoolSize: 5, // Minimum number of connections in the connection pool
+      // SSL options to handle TLS issues
+      tls: true,
+      tlsInsecure: false,
+      // Additional options for SSL compatibility
+      tlsCAFile: process.env.MONGODB_TLS_CA_FILE,
+      // Retry writes and read preferences
+      retryWrites: true,
+      readPreference: 'primary',
     });
     
     // Connect to the MongoDB server
@@ -39,9 +52,9 @@ export async function connectToDatabase() {
     cachedDb = db;
     
     return { client, db };
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error connecting to MongoDB:', error);
-    throw new Error('Failed to connect to database');
+    throw new Error(`Failed to connect to database: ${error.message || 'Unknown error'}`);
   }
 }
 
