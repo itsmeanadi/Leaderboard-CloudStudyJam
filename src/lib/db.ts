@@ -18,8 +18,14 @@ export async function connectToDatabase() {
   }
 
   try {
-    // Create a new MongoClient
-    const client = new MongoClient(MONGODB_URI);
+    // Create a new MongoClient with proper options for production
+    const client = new MongoClient(MONGODB_URI, {
+      connectTimeoutMS: 10000, // 10 seconds
+      serverSelectionTimeoutMS: 10000, // 10 seconds
+      socketTimeoutMS: 20000, // 20 seconds
+      maxPoolSize: 10, // Maximum number of connections in the connection pool
+      minPoolSize: 5, // Minimum number of connections in the connection pool
+    });
     
     // Connect to the MongoDB server
     await client.connect();

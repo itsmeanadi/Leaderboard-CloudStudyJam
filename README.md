@@ -52,9 +52,28 @@ A leaderboard application built with Next.js for tracking Google Cloud Study Jam
 2. Sign up at [Vercel](https://vercel.com)
 3. Create a new project and import your GitHub repository
 4. Add environment variables in the Vercel dashboard:
-   - `NEXT_PUBLIC_ADMIN_USERNAME`
-   - `NEXT_PUBLIC_ADMIN_PASSWORD`
-5. Deploy!
+   - `NEXT_PUBLIC_ADMIN_USERNAME` - Your admin username
+   - `NEXT_PUBLIC_ADMIN_PASSWORD` - Your admin password
+   - `MONGODB_URI` - Your MongoDB connection string (for MongoDB Atlas or other cloud MongoDB services)
+5. Configure build settings:
+   - Build Command: `npm run build`
+   - Output Directory: `.next`
+   - Install Command: `npm install`
+6. Deploy!
+
+### Environment Variables
+
+For production deployment, you should set these environment variables in your Vercel dashboard:
+
+```
+NEXT_PUBLIC_ADMIN_USERNAME=your_admin_username
+NEXT_PUBLIC_ADMIN_PASSWORD=your_secure_admin_password
+MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/leaderboard
+```
+
+### MongoDB Configuration
+
+For production, it's recommended to use a cloud MongoDB service like MongoDB Atlas rather than a local database. Update the `MONGODB_URI` environment variable with your cloud database connection string.
 
 ## Usage
 
