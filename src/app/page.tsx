@@ -3,20 +3,21 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import Image from "next/image";
 
-import AdminPanel from "@/components/Leaderboard/AdminPanel";
-import LeaderboardCard from "@/components/Leaderboard/LeaderboardCard";
-import LeaderboardTable from "@/components/Leaderboard/LeaderboardTable";
+import AdminPanel from "@/components/LeaderBoard/AdminPanel";
+import LeaderboardCard from "@/components/LeaderBoard/LeaderboardCard";
+import LeaderboardTable from "@/components/LeaderBoard/LeaderboardTable";
+import LeaderboardStats from "@/components/LeaderBoard/LeaderboardStats";
+import SearchBar from "@/components/LeaderBoard/SearchBar";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { LeaderboardEntry, FrozenUser } from "@/lib/utils";
 
-import { Loader2, Sun, Moon } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 export default function Home() {
   const [leaderboardData, setLeaderboardData] = useState<LeaderboardEntry[]>([]);
   const [frozenUsers, setFrozenUsers] = useState<Record<string, FrozenUser>>({});
-  const [isLoading, setIsLoading] = useState(false);
   const [dataLoading, setDataLoading] = useState(true);
-  const [theme, setTheme] = useState("dark");
   const [searchQuery, setSearchQuery] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
 
@@ -43,8 +44,6 @@ export default function Home() {
   useEffect(() => {
     fetchLeaderboard();
   }, [fetchLeaderboard]);
-
-  const toggleTheme = () => setTheme(prev => (prev === "dark" ? "light" : "dark"));
 
   const filteredLeaderboardData = useMemo(() => {
     return leaderboardData.filter(
@@ -78,7 +77,7 @@ export default function Home() {
           <h1 className="text-3xl font-bold">IET DAVV Study Jam Leaderboard</h1>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={toggleTheme}>{theme === "dark" ? "🌙" : "☀️"}</button>
+          <ThemeToggle />
           {isAdmin ? (
             <AdminPanel
               isAdmin={isAdmin}
@@ -97,6 +96,15 @@ export default function Home() {
         </div>
       </header>
 
+      {/* Search Bar */}
+      <SearchBar 
+        value={searchQuery} 
+        onChange={setSearchQuery} 
+      />
+
+      {/* Statistics */}
+      <LeaderboardStats data={leaderboardData} />
+
       {isMobile ? (
         <LeaderboardCard
           data={filteredLeaderboardData}
@@ -108,6 +116,7 @@ export default function Home() {
           data={filteredLeaderboardData}
           frozenUsers={frozenUsers}
           getRankBadge={getRankBadge}
+          isMobile={isMobile}
         />
       )}
     </div>

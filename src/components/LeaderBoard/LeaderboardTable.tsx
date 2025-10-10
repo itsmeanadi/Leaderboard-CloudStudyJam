@@ -48,7 +48,7 @@ const LeaderboardTable: React.FC<Props> = ({ data, frozenUsers, getRankBadge, is
                             <Lock className="h-4 w-4 text-green-600" />
                           </TooltipTrigger>
                           <TooltipContent>
-                            <p>This user's rank is locked at {displayRank}.</p>
+                            <p>This user&apos;s rank is locked at {displayRank}.</p>
                           </TooltipContent>
                         </Tooltip>
                       )}
