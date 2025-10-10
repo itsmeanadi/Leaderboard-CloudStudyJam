@@ -9,10 +9,10 @@ import type { LeaderboardEntry } from "@/lib/utils";
 interface Props {
     data: LeaderboardEntry[];
     getRankBadge: (rank: number) => React.ReactNode;
-    isMobile: boolean; // Note: isMobile is usually false for the table view
+    // isMobile: boolean; // Note: isMobile is usually false for the table view
 }
 
-const LeaderboardTable: React.FC<Props> = ({ data, getRankBadge, isMobile }) => {
+const LeaderboardTable: React.FC<Props> = ({ data, getRankBadge }) => {
     
     // Function to determine the rank-specific styling for the row
     const getRankRowStyles = (rank: number) => {

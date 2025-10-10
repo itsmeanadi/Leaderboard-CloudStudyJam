@@ -170,7 +170,7 @@ export default function Home() {
                 <div className="flex flex-col items-center p-6 bg-card rounded-xl shadow-2xl border-t-4 border-primary animate-pulse">
                     <Loader2 className="h-10 w-10 text-primary animate-spin" />
                     <span className="mt-3 text-lg font-semibold text-primary">Loading leaderboard...</span>
-                    <span className="text-sm text-muted-foreground">GDGoC ki duniya loading ho rahi hai!</span>
+                    <span className="text-sm text-muted-foreground">GDGoC Is Analysing Your Scores</span>
                 </div>
             </div>
         );
@@ -297,7 +297,6 @@ export default function Home() {
                                     <LeaderboardTable
                                         data={visibleLeaderboardData}
                                         getRankBadge={getRankBadge}
-                                        isMobile={isMobile}
                                     />
                                 </div>
                             )}
