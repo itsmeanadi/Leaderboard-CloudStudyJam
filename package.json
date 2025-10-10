@@ -7,14 +7,16 @@
     "build": "next build --turbopack",
     "start": "next start",
     "lint": "eslint",
-    "seed": "ts-node --compilerOptions '{\"module\":\"commonjs\"}' src/scripts/seed-database.ts",
+    "seed": "ts-node src/scripts/seed-database.ts",
     "test-db": "node src/scripts/test-db.js",
     "test-atlas": "node src/scripts/test-atlas.js",
     "encode-uri": "node src/scripts/encode-mongodb-uri.js",
     "diagnose-mongo": "node src/scripts/diagnose-mongodb.js",
     "test-mongo-atlas": "node src/scripts/test-mongodb-atlas.js",
     "debug-mongo": "node src/scripts/debug-mongodb.js",
-    "test-mongo-insecure": "node src/scripts/test-mongo-insecure.js"
+    "test-mongo-insecure": "node src/scripts/test-mongo-insecure.js",
+    "setup-ttl-indexes": "node src/scripts/setup-ttl-indexes.js",
+    "cleanup-old-data": "node src/scripts/cleanup-old-data.js"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.15",

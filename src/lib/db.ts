@@ -168,7 +168,12 @@ export async function initializeDatabase() {
       await (leaderboardCollection.createIndex({ email: 1 }) as any);
       await (frozenUsersCollection.createIndex({ email: 1 }) as any);
       
-      console.log('Database initialized successfully');
+      // Create TTL indexes to automatically expire data after 2 days (172800 seconds)
+      // We'll add a createdAt field to track when entries were added
+      await (leaderboardCollection.createIndex({ createdAt: 1 }, { expireAfterSeconds: 172800 }) as any);
+      await (frozenUsersCollection.createIndex({ createdAt: 1 }, { expireAfterSeconds: 172800 }) as any);
+      
+      console.log('Database initialized successfully with TTL indexes');
     } else {
       console.log('Using in-memory storage, no database initialization needed');
     }

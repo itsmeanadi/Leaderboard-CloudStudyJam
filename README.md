@@ -10,6 +10,7 @@ A leaderboard application built with Next.js for tracking Google Cloud Study Jam
 - Dark/light theme toggle
 - Search and sorting functionality
 - Participant statistics
+- Data persistence for 2 days
 
 ## Getting Started
 
@@ -17,6 +18,7 @@ A leaderboard application built with Next.js for tracking Google Cloud Study Jam
 
 - Node.js 18+
 - npm or yarn
+- MongoDB (local or Atlas)
 
 ### Installation
 
@@ -35,14 +37,48 @@ A leaderboard application built with Next.js for tracking Google Cloud Study Jam
    ```
    NEXT_PUBLIC_ADMIN_USERNAME=admin
    NEXT_PUBLIC_ADMIN_PASSWORD=your_secure_password
+   MONGODB_URI=your_mongodb_connection_string
    ```
 
-4. Run the development server:
+4. Set up TTL indexes for automatic data cleanup (data will be automatically deleted after 2 days):
+   ```bash
+   npm run setup-ttl-indexes
+   ```
+
+5. Run the development server:
    ```bash
    npm run dev
    ```
 
-5. Open [http://localhost:3000](http://localhost:3000) in your browser
+6. Open [http://localhost:3000](http://localhost:3000) in your browser
+
+## Data Persistence
+
+The application now includes automatic data retention for 2 days:
+- Data is automatically deleted after 2 days using MongoDB TTL indexes
+- Manual cleanup scripts are available for maintenance
+
+### Setting up TTL Indexes
+
+To ensure data is automatically deleted after 2 days, run:
+```bash
+npm run setup-ttl-indexes
+```
+
+This script creates TTL (Time To Live) indexes on the MongoDB collections that will automatically expire documents after 2 days.
+
+### Manual Data Cleanup
+
+To manually clean up old data (older than 2 days):
+```bash
+npm run cleanup-old-data
+```
+
+### How It Works
+
+1. When data is inserted into the database, a `createdAt` timestamp is added to each document
+2. TTL indexes are configured to automatically delete documents older than 2 days
+3. This ensures that leaderboard data is retained for exactly 2 days as requested
 
 ## Deployment
 
@@ -59,7 +95,11 @@ A leaderboard application built with Next.js for tracking Google Cloud Study Jam
    - Build Command: `npm run build`
    - Output Directory: `.next`
    - Install Command: `npm install`
-6. Deploy!
+6. After deployment, run the TTL index setup script to ensure data retention works:
+   ```bash
+   npm run setup-ttl-indexes
+   ```
+7. Deploy!
 
 ### Environment Variables
 

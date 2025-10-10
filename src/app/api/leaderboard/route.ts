@@ -67,7 +67,8 @@ export async function GET() {
     return NextResponse.json({
       entries: entries.map((entry: any) => ({
         ...entry,
-        _id: undefined // Remove MongoDB _id from response
+        _id: undefined, // Remove MongoDB _id from response
+        createdAt: undefined // Remove createdAt from response to keep API consistent
       })),
       frozenUsers
     });
@@ -132,10 +133,11 @@ export async function POST(request: Request) {
     
     // Insert new leaderboard entries if provided
     if (entries && entries.length > 0) {
-      // Add email field to each entry for easier querying
+      // Add email field and createdAt timestamp to each entry for easier querying and TTL
       const entriesWithEmail = entries.map((entry: LeaderboardEntry) => ({
         ...entry,
-        email: entry["User Email"]
+        email: entry["User Email"],
+        createdAt: new Date() // Add timestamp for TTL index
       }));
       
       await (leaderboardCollection.insertMany(entriesWithEmail) as any);
@@ -146,7 +148,8 @@ export async function POST(request: Request) {
       const frozenUsersArray = Object.keys(newFrozenUsers).map(email => ({
         email,
         rank: newFrozenUsers[email].rank,
-        timestamp: newFrozenUsers[email].timestamp
+        timestamp: newFrozenUsers[email].timestamp,
+        createdAt: new Date() // Add timestamp for TTL index
       }));
       
       if (frozenUsersArray.length > 0) {
@@ -171,7 +174,8 @@ export async function POST(request: Request) {
       message: 'Leaderboard data updated successfully',
       entries: updatedEntries.map((entry: any) => ({
         ...entry,
-        _id: undefined // Remove MongoDB _id from response
+        _id: undefined, // Remove MongoDB _id from response
+        createdAt: undefined // Remove createdAt from response to keep API consistent
       })),
       frozenUsers: updatedFrozenUsers
     });
