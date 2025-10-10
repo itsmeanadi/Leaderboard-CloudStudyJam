@@ -71,6 +71,8 @@ NEXT_PUBLIC_ADMIN_PASSWORD=your_secure_admin_password
 MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/leaderboard
 ```
 
+Note: Environment variables prefixed with `NEXT_PUBLIC_` will be embedded into the browser bundle and are visible to the client. For sensitive data, use environment variables without this prefix.
+
 ### MongoDB Configuration
 
 For production, it's recommended to use a cloud MongoDB service like MongoDB Atlas rather than a local database. Update the `MONGODB_URI` environment variable with your cloud database connection string.
