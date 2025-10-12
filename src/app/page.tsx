@@ -32,6 +32,7 @@ export default function Home() {
     const isMobile = useIsMobile();
 
     const fetchLeaderboard = useCallback(async () => {
+        // ... (fetchLeaderboard logic remains the same)
         try {
             setDataLoading(true);
             const res = await fetch("/api/leaderboard");
@@ -89,12 +90,13 @@ export default function Home() {
     };
 
     const sortedLeaderboardData = useMemo(() => {
+        // ... (sorting logic remains the same)
         const sortableData = [...leaderboardData];
         
         sortableData.sort((a, b) => {
             if (sortConfig.key === 'rank') {
-                const rankA = a.rank || 0;
-                const rankB = b.rank || 0;
+                const rankA = a.rank;
+                const rankB = b.rank;
                 
                 if (sortConfig.direction === 'asc') {
                     return rankA - rankB;
@@ -106,10 +108,6 @@ export default function Home() {
             let aValue: string | number = a[sortConfig.key as keyof LeaderboardEntry] as string | number;
             let bValue: string | number = b[sortConfig.key as keyof LeaderboardEntry] as string | number;
             
-            // Handle potentially undefined values
-            if (aValue === undefined || aValue === null) aValue = '';
-            if (bValue === undefined || bValue === null) bValue = '';
-            
             if (typeof aValue === 'string' && !isNaN(Number(aValue))) {
                 aValue = Number(aValue);
             }
@@ -117,11 +115,8 @@ export default function Home() {
                 bValue = Number(bValue);
             }
             
-            if (typeof aValue === 'string' && typeof bValue === 'string') {
-                return sortConfig.direction === 'asc' 
-                    ? aValue.localeCompare(bValue) 
-                    : bValue.localeCompare(aValue);
-            }
+            if (aValue == null) aValue = '';
+            if (bValue == null) bValue = '';
             
             if (aValue < bValue) {
                 return sortConfig.direction === 'asc' ? -1 : 1;
@@ -136,15 +131,11 @@ export default function Home() {
     }, [leaderboardData, sortConfig]);
 
     const filteredLeaderboardData = useMemo(() => {
+        // ... (filtering logic remains the same)
         return sortedLeaderboardData.filter(
-            user => {
-                const userName = user["User Name"] || '';
-                const userEmail = user["User Email"] || '';
-                const searchLower = searchQuery.toLowerCase();
-                
-                return userName.toLowerCase().includes(searchLower) || 
-                       userEmail.toLowerCase().includes(searchLower);
-            }
+            user =>
+                user["User Name"].toLowerCase().includes(searchQuery.toLowerCase()) ||
+                user["User Email"].toLowerCase().includes(searchQuery.toLowerCase())
         );
     }, [sortedLeaderboardData, searchQuery]);
 

@@ -38,7 +38,7 @@ const LeaderboardTable: React.FC<Props> = ({ data, getRankBadge }) => {
             <Table>
                 {/* Enhanced Header with Primary Text */}
                 <TableHeader className="bg-muted/50 border-b border-primary/20 sticky top-0 z-10">
-                    <TableRow className="hover:bg-muted/50">
+                    <TableRow className="hover:bg-muted/50"> {/* Prevent hover effect on header */}
                         <TableHead className="w-[80px] text-center align-middle font-bold text-primary/80">Rank</TableHead>
                         <TableHead className="text-left align-middle font-bold text-primary/80">User Details</TableHead>
                         <TableHead className="text-center align-middle font-bold text-primary/80">Skill Badges</TableHead>
