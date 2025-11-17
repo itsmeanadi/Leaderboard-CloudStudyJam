@@ -188,7 +188,7 @@ export default function Home() {
                     <div>
                         {/* Title in bright blue, bold and engaging */}
                         <h1 className="text-3xl font-extrabold tracking-tight text-primary">
-                            GDGoC IET Study Jam
+                            GDGoC IET Study Jam samosa
                         </h1>
                         <p className="text-base text-muted-foreground mt-1 flex items-center gap-1">
                             <Award className="h-4 w-4 text-yellow-500" />
