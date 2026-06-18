@@ -19,3 +19,19 @@ export async function GET() {
     );
   }
 }
+
+export async function POST(request: Request) {
+  try {
+    const body = await request.json();
+    if (body.action === 'login') {
+      const validPassword = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || 'password123';
+      if (body.password === validPassword) {
+        return NextResponse.json({ success: true });
+      }
+      return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
+    }
+    return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
+  } catch (error) {
+    return NextResponse.json({ error: 'Server error' }, { status: 500 });
+  }
+}
