@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Upload, LogOut, AlertCircle, Link } from "lucide-react";
+import { Loader2, Upload, LogOut, AlertCircle } from "lucide-react";
 import { 
   Dialog, 
   DialogContent, 
@@ -16,7 +16,6 @@ import {
 } from "@/components/ui/dialog";
 import type { LeaderboardEntry } from "@/lib/utils";
 
-// Type for raw CSV data before processing
 interface CSVRow {
   [key: string]: string;
 }
@@ -35,8 +34,6 @@ const AdminPanel: React.FC<Props> = ({ isAdmin, setIsAdmin, onCSVUpload, onLogou
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [uploadStatus, setUploadStatus] = useState<{message: string, type: 'success' | 'error'} | null>(null);
-  const [googleSheetUrl, setGoogleSheetUrl] = useState("");
-  const [showGoogleSheetForm, setShowGoogleSheetForm] = useState(false);
 
   const handleLogin = () => {
     const validUsername = process.env.NEXT_PUBLIC_ADMIN_USERNAME;
@@ -60,9 +57,7 @@ const AdminPanel: React.FC<Props> = ({ isAdmin, setIsAdmin, onCSVUpload, onLogou
   };
 
   const sortLeaderboardData = (data: LeaderboardEntry[]): LeaderboardEntry[] => {
-    // Sort by skill badges completed (descending), then by arcade games (descending)
     return [...data].sort((a, b) => {
-      // First sort by skill badges completed (descending)
       const skillBadgesA = typeof a["# of Skill Badges Completed"] === 'string' 
         ? parseInt(a["# of Skill Badges Completed"]) 
         : a["# of Skill Badges Completed"];
@@ -74,7 +69,6 @@ const AdminPanel: React.FC<Props> = ({ isAdmin, setIsAdmin, onCSVUpload, onLogou
         return skillBadgesB - skillBadgesA;
       }
       
-      // Then sort by arcade games completed (descending)
       const arcadeGamesA = typeof a["# of Arcade Games Completed"] === 'string' 
         ? parseInt(a["# of Arcade Games Completed"]) 
         : a["# of Arcade Games Completed"];
@@ -87,7 +81,6 @@ const AdminPanel: React.FC<Props> = ({ isAdmin, setIsAdmin, onCSVUpload, onLogou
   };
 
   const cleanCSVValue = (value: string): string => {
-    // Remove surrounding quotes if present and trim whitespace
     let cleanValue = value.trim();
     if (cleanValue.startsWith('"') && cleanValue.endsWith('"')) {
       cleanValue = cleanValue.substring(1, cleanValue.length - 1);
@@ -99,7 +92,6 @@ const AdminPanel: React.FC<Props> = ({ isAdmin, setIsAdmin, onCSVUpload, onLogou
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Check file type
     if (file.type !== 'text/csv' && !file.name.endsWith('.csv')) {
       setUploadStatus({message: "Please upload a valid CSV file", type: 'error'});
       setTimeout(() => setUploadStatus(null), 3000);
@@ -111,19 +103,15 @@ const AdminPanel: React.FC<Props> = ({ isAdmin, setIsAdmin, onCSVUpload, onLogou
     setUploadStatus(null);
 
     try {
-      // CSV parsing can be done here (or via backend API)
       const text = await file.text();
       const rows = text.split("\n").map(row => row.split(","));
       
-      // Validate CSV structure
       if (rows.length < 2) {
         throw new Error("CSV file is empty or invalid");
       }
       
-      // Convert CSV rows into objects with headers
       const headers = rows.shift() || [];
       
-      // Validate required headers
       const requiredHeaders = ['User Name', 'User Email'];
       const missingHeaders = requiredHeaders.filter(header => !headers.includes(header));
       
@@ -132,7 +120,7 @@ const AdminPanel: React.FC<Props> = ({ isAdmin, setIsAdmin, onCSVUpload, onLogou
       }
       
       const data: CSVRow[] = rows
-        .filter(row => row.some(cell => cell.trim() !== "")) // Filter out empty rows
+        .filter(row => row.some(cell => cell.trim() !== ""))
         .map((row) => {
           const obj: CSVRow = {};
           row.forEach((val, idx) => {
@@ -143,7 +131,6 @@ const AdminPanel: React.FC<Props> = ({ isAdmin, setIsAdmin, onCSVUpload, onLogou
           return obj;
         });
       
-      // Convert to LeaderboardEntry type
       let leaderboardData: LeaderboardEntry[] = data.map((row, index) => ({
         rank: parseInt(row['rank']) || index + 1,
         "User Name": row['User Name'] || '',
@@ -154,16 +141,13 @@ const AdminPanel: React.FC<Props> = ({ isAdmin, setIsAdmin, onCSVUpload, onLogou
         "Google Cloud Skills Boost Profile URL": row['Google Cloud Skills Boost Profile URL']
       }));
       
-      // Sort the data in descending order by default
       leaderboardData = sortLeaderboardData(leaderboardData);
       
-      // Update ranks based on sorted order
       leaderboardData = leaderboardData.map((entry, index) => ({
         ...entry,
         rank: index + 1
       }));
       
-      // Pass data to parent component for saving
       await onCSVUpload(leaderboardData);
       setUploadStatus({message: "CSV uploaded and sorted successfully!", type: 'success'});
     } catch (err) {
@@ -177,85 +161,26 @@ const AdminPanel: React.FC<Props> = ({ isAdmin, setIsAdmin, onCSVUpload, onLogou
     }
   };
 
-  const handleGoogleSheetUpload = async () => {
-    if (!googleSheetUrl) {
-      setUploadStatus({message: "Please enter a Google Sheet URL", type: 'error'});
-      setTimeout(() => setUploadStatus(null), 3000);
-      return;
-    }
-
-    // Validate Google Sheet URL format
-    const googleSheetRegex = /^https:\/\/docs\.google\.com\/spreadsheets\/d\/[a-zA-Z0-9_-]+/;
-    if (!googleSheetRegex.test(googleSheetUrl)) {
-      setUploadStatus({message: "Please enter a valid Google Sheet URL", type: 'error'});
-      setTimeout(() => setUploadStatus(null), 3000);
-      return;
-    }
-
-    setIsLoading(true);
-    setUploadStatus(null);
-
-    try {
-      // Call the API endpoint to fetch data from Google Sheets
-      const response = await fetch('/api/google-sheets', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ spreadsheetUrl: googleSheetUrl }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to connect to Google Sheet');
-      }
-
-      const result = await response.json();
-      console.log('Google Sheets API response:', result);
-      
-      // In a real implementation, we would use the actual data from Google Sheets
-      // For now, we'll show a message that the feature is working
-      setUploadStatus({
-        message: "Google Sheets connection successful! In a production environment, this would fetch real data from your spreadsheet.", 
-        type: 'success'
-      });
-      
-      // If we had real data, we would call onCSVUpload with it:
-      // onCSVUpload(result.placeholderData);
-    } catch (err) {
-      console.error(err);
-      const errorMessage = err instanceof Error ? err.message : "Failed to connect to Google Sheet";
-      setUploadStatus({message: errorMessage, type: 'error'});
-    } finally {
-      setIsLoading(false);
-      setTimeout(() => {
-        setUploadStatus(null);
-        setShowGoogleSheetForm(false);
-        setGoogleSheetUrl("");
-      }, 5000);
-    }
-  };
 
   if (!isAdmin) {
     return (
       <Dialog open={loginOpen} onOpenChange={setLoginOpen}>
         <DialogTrigger asChild>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" className="rounded-none border border-[#E0E0E0] dark:border-[#333333] shadow-none bg-transparent hover:bg-transparent text-foreground">
             Admin Login
           </Button>
         </DialogTrigger>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[425px] rounded-none border border-[#E0E0E0] dark:border-[#333333] shadow-none bg-background">
           <DialogHeader>
-            <DialogTitle>Admin Portal Access</DialogTitle>
+            <DialogTitle className="font-bold text-lg">Admin Portal Access</DialogTitle>
             <DialogDescription>
               Enter your credentials to access the admin dashboard
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             {error && (
-              <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+              <div className="border border-red-500 bg-transparent p-2 text-sm text-red-500 font-mono">
                 <div className="flex items-center gap-2">
-                  <AlertCircle className="h-4 w-4" />
                   <span>{error}</span>
                 </div>
               </div>
@@ -271,7 +196,7 @@ const AdminPanel: React.FC<Props> = ({ isAdmin, setIsAdmin, onCSVUpload, onLogou
                   value={username}
                   onChange={e => setUsername(e.target.value)}
                   onKeyPress={handleKeyPress}
-                  className="w-full"
+                  className="w-full rounded-none border-[#E0E0E0] dark:border-[#333333] shadow-none focus-visible:ring-0"
                 />
               </div>
             </div>
@@ -287,16 +212,16 @@ const AdminPanel: React.FC<Props> = ({ isAdmin, setIsAdmin, onCSVUpload, onLogou
                   value={password}
                   onChange={e => setPassword(e.target.value)}
                   onKeyPress={handleKeyPress}
-                  className="w-full"
+                  className="w-full rounded-none border-[#E0E0E0] dark:border-[#333333] shadow-none focus-visible:ring-0"
                 />
               </div>
             </div>
           </div>
           <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setLoginOpen(false)}>
+            <Button variant="outline" onClick={() => setLoginOpen(false)} className="rounded-none border border-[#E0E0E0] dark:border-[#333333] shadow-none hover:bg-transparent">
               Cancel
             </Button>
-            <Button onClick={handleLogin} disabled={isLoading}>
+            <Button onClick={handleLogin} disabled={isLoading} className="rounded-none shadow-none bg-foreground text-background hover:bg-foreground">
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -313,30 +238,27 @@ const AdminPanel: React.FC<Props> = ({ isAdmin, setIsAdmin, onCSVUpload, onLogou
   }
 
   return (
-    <Card className="w-full max-w-2xl">
-      <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b">
+    <div className="w-full max-w-2xl border border-[#E0E0E0] dark:border-[#333333] bg-background">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-[#E0E0E0] dark:border-[#333333] p-4">
         <div>
-          <CardTitle className="text-xl flex items-center gap-2">
-            <span className="bg-primary text-primary-foreground p-2 rounded-lg">Admin</span>
+          <h2 className="text-lg font-bold">
+            <span className="font-mono bg-foreground text-background px-1 mr-2">Admin</span>
             Dashboard
-          </CardTitle>
-          <CardDescription>Manage leaderboard data and settings</CardDescription>
+          </h2>
+          <p className="text-sm font-mono mt-1 text-muted-foreground">Manage leaderboard data and settings</p>
         </div>
-        <Button variant="outline" size="sm" className="flex items-center gap-2" onClick={() => { setIsAdmin(false); onLogout(); }}>
+        <Button variant="outline" size="sm" className="rounded-none border border-[#E0E0E0] dark:border-[#333333] shadow-none bg-transparent hover:bg-transparent flex items-center gap-2" onClick={() => { setIsAdmin(false); onLogout(); }}>
           <LogOut className="h-4 w-4" /> Logout
         </Button>
-      </CardHeader>
-      <CardContent className="pt-6">
-        <div className="space-y-6">
-          {/* CSV Upload Section */}
-          <div className="border rounded-lg p-4">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="bg-primary/10 p-2 rounded-lg">
-                <Upload className="h-5 w-5 text-primary" />
-              </div>
+      </div>
+      <div className="p-4">
+        <div className="space-y-4">
+          <div className="border border-[#E0E0E0] dark:border-[#333333] p-3">
+            <div className="flex items-center gap-2 mb-2 border-b border-[#E0E0E0] dark:border-[#333333] pb-2">
+              <Upload className="h-5 w-5" />
               <div>
-                <h3 className="font-semibold">Update Leaderboard Data</h3>
-                <p className="text-sm text-muted-foreground">
+                <h3 className="font-bold text-sm">Update Leaderboard Data</h3>
+                <p className="text-xs font-mono text-muted-foreground">
                   Upload a CSV file with participant data to update the leaderboard (automatically sorted by completion)
                 </p>
               </div>
@@ -350,10 +272,10 @@ const AdminPanel: React.FC<Props> = ({ isAdmin, setIsAdmin, onCSVUpload, onLogou
                 disabled={isLoading}
                 className="hidden"
               />
-              <Button asChild variant="default" size="sm" disabled={isLoading} className="w-full sm:w-auto">
+              <Button asChild variant="default" size="sm" disabled={isLoading} className="w-full sm:w-auto rounded-none shadow-none bg-foreground text-background hover:bg-foreground">
                 <Label 
                   htmlFor="csv-upload" 
-                  className="cursor-pointer flex items-center gap-2 justify-center"
+                  className="cursor-pointer flex items-center gap-2 justify-center font-mono text-sm"
                 >
                   {isLoading ? (
                     <>
@@ -371,104 +293,29 @@ const AdminPanel: React.FC<Props> = ({ isAdmin, setIsAdmin, onCSVUpload, onLogou
             </div>
           </div>
 
-          {/* Google Sheets Section */}
-          <div className="border rounded-lg p-4">
-            <div className="flex items-start gap-3 mb-3">
-              <div className="bg-primary/10 p-2 rounded-lg mt-0.5">
-                <Link className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <h3 className="font-semibold">Google Sheets Integration</h3>
-                <p className="text-sm text-muted-foreground">
-                  Connect directly to a Google Sheet to automatically sync leaderboard data
-                </p>
-              </div>
-            </div>
-            <div className="flex flex-col sm:flex-row items-center gap-3 mt-4">
-              <Button 
-                variant="secondary" 
-                size="sm" 
-                className="flex items-center gap-2 w-full sm:w-auto"
-                onClick={() => setShowGoogleSheetForm(!showGoogleSheetForm)}
-                disabled={isLoading}
-              >
-                <Link className="h-4 w-4" />
-                Connect Google Sheet
-              </Button>
-            </div>
-          </div>
 
-          {/* Google Sheet Form */}
-          {showGoogleSheetForm && (
-            <div className="border rounded-lg p-4 bg-muted/30">
-              <h3 className="font-semibold mb-3">Google Sheet URL</h3>
-              <div className="space-y-4">
-                <div className="flex flex-col space-y-2">
-                  <Input
-                    id="google-sheet-url"
-                    placeholder="https://docs.google.com/spreadsheets/d/..."
-                    value={googleSheetUrl}
-                    onChange={(e) => setGoogleSheetUrl(e.target.value)}
-                    disabled={isLoading}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Make sure your Google Sheet is publicly accessible or shared with the service account
-                  </p>
-                </div>
-                <div className="flex flex-col sm:flex-row justify-end gap-2">
-                  <Button 
-                    variant="outline" 
-                    onClick={() => setShowGoogleSheetForm(false)}
-                    disabled={isLoading}
-                    className="w-full sm:w-auto"
-                  >
-                    Cancel
-                  </Button>
-                  <Button 
-                    onClick={handleGoogleSheetUpload}
-                    disabled={isLoading}
-                    className="w-full sm:w-auto"
-                  >
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Connecting...
-                      </>
-                    ) : (
-                      "Connect Sheet"
-                    )}
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Status Messages */}
           {uploadStatus && (
-            <div className={`p-4 rounded-lg text-sm ${
+            <div className={`p-2 font-mono text-xs border ${
               uploadStatus.type === 'success' 
-                ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' 
-                : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
+                ? 'border-green-500 text-green-500' 
+                : 'border-red-500 text-red-500'
             }`}>
               {uploadStatus.message}
             </div>
           )}
 
-          {/* Information Section */}
-          <div className="border rounded-lg p-4">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="bg-primary/10 p-2 rounded-lg">
-                <Link className="h-5 w-5 text-primary" />
-              </div>
-              <h3 className="font-semibold">Information</h3>
+          <div className="border border-[#E0E0E0] dark:border-[#333333] p-3">
+            <div className="flex items-center gap-2 mb-2 border-b border-[#E0E0E0] dark:border-[#333333] pb-2">
+              <AlertCircle className="h-5 w-5" />
+              <h3 className="font-bold text-sm">Information</h3>
             </div>
-            <div className="space-y-4">
+            <div className="space-y-3">
               <div>
-                <h4 className="font-medium text-sm mb-2">Sorting Information</h4>
-                <p className="text-xs text-muted-foreground mb-2">
+                <h4 className="font-bold text-xs mb-1">Sorting Information</h4>
+                <p className="text-xs font-mono mb-1">
                   Data is automatically sorted by completion metrics in descending order:
                 </p>
-                <ul className="text-xs text-muted-foreground list-disc pl-5 space-y-1">
+                <ul className="text-xs font-mono list-disc pl-4 space-y-1">
                   <li>Primary: # of Skill Badges Completed (highest first)</li>
                   <li>Secondary: # of Arcade Games Completed (highest first)</li>
                   <li>Ranks are automatically updated based on this sorting</li>
@@ -476,8 +323,8 @@ const AdminPanel: React.FC<Props> = ({ isAdmin, setIsAdmin, onCSVUpload, onLogou
               </div>
               
               <div>
-                <h4 className="font-medium text-sm mb-2">CSV Format Requirements</h4>
-                <ul className="text-xs text-muted-foreground list-disc pl-5 space-y-1">
+                <h4 className="font-bold text-xs mb-1">CSV Format Requirements</h4>
+                <ul className="text-xs font-mono list-disc pl-4 space-y-1">
                   <li>Must include columns: &quot;User Name&quot;, &quot;User Email&quot;</li>
                   <li>Optional columns: &quot;rank&quot;, &quot;# of Skill Badges Completed&quot;, &quot;# of Arcade Games Completed&quot;</li>
                   <li>&quot;All Skill Badges &amp; Games Completed&quot;, &quot;Google Cloud Skills Boost Profile URL&quot;</li>
@@ -486,8 +333,8 @@ const AdminPanel: React.FC<Props> = ({ isAdmin, setIsAdmin, onCSVUpload, onLogou
             </div>
           </div>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 };
 

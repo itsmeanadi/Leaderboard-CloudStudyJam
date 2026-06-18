@@ -11,5 +11,5 @@ export interface LeaderboardEntry {
 
 export interface FrozenUser {
   rank: number;
-  timestamp?: string; // optional, in case you want to track when the rank was frozen
+  timestamp?: string;
 }

@@ -6,36 +6,19 @@
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
     "start": "next start",
-    "lint": "eslint",
-    "seed": "ts-node src/scripts/seed-database.ts",
-    "test-db": "node src/scripts/test-db.js",
-    "test-atlas": "node src/scripts/test-atlas.js",
-    "encode-uri": "node src/scripts/encode-mongodb-uri.js",
-    "diagnose-mongo": "node src/scripts/diagnose-mongodb.js",
-    "test-mongo-atlas": "node src/scripts/test-mongodb-atlas.js",
-    "debug-mongo": "node src/scripts/debug-mongodb.js",
-    "test-mongo-insecure": "node src/scripts/test-mongo-insecure.js",
-    "setup-ttl-indexes": "node src/scripts/setup-ttl-indexes.js",
-    "cleanup-old-data": "node src/scripts/cleanup-old-data.js"
+    "lint": "eslint"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.15",
     "@radix-ui/react-label": "^2.1.7",
     "@radix-ui/react-slot": "^1.2.3",
     "@radix-ui/react-tooltip": "^1.2.8",
-    "@shadcn/ui": "^0.0.4",
     "class-variance-authority": "^0.7.1",
-    "clsx": "^2.1.1",
-    "dotenv": "^17.2.3",
-    "framer-motion": "^12.23.23",
-    "googleapis": "^162.0.0",
     "lucide-react": "^0.545.0",
     "mongodb": "^6.20.0",
     "next": "^15.5.4",
-    "papaparse": "^5.5.3",
     "react": "^19.1.0",
-    "react-dom": "^19.1.0",
-    "tailwind-merge": "^3.3.1"
+    "react-dom": "^19.1.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
@@ -46,7 +29,6 @@
     "eslint": "^9",
     "eslint-config-next": "15.5.4",
     "tailwindcss": "^4",
-    "ts-node": "^10.9.2",
     "tw-animate-css": "^1.4.0",
     "typescript": "^5"
   }

@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { connectToDatabase, initializeDatabase } from '@/lib/db';
 
-// GET /api/init - Initialize the database
 export async function GET() {
   try {
     console.log('Initializing database...');
