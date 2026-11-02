@@ -1,18 +1,22 @@
 import "./globals.css";
-import { Inter } from "next/font/google";
+import { Plus_Jakarta_Sans } from "next/font/google";
 
-const inter = Inter({ subsets: ["latin"] });
+const font = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
+  display: "swap",
+});
 
 export const metadata = {
-  title: "GDGoC IET Leaderboard",
-  description: "Google Cloud Study Jam Leaderboard for GDGoC IET",
+  title: "GDGoC IET DAVV — Google Cloud Study Jam Leaderboard",
+  description: "Official participant leaderboard for Google Cloud Study Jam at GDGoC IET DAVV.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.className} bg-gray-50`}>
-          {children}
+      <body className={`${font.className} bg-[#F8F7F2] text-[#151515] antialiased selection:bg-[#FFB586] selection:text-[#171525]`}>
+        {children}
       </body>
     </html>
   );

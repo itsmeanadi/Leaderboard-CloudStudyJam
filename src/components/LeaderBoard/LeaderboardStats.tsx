@@ -1,34 +1,70 @@
 "use client";
 
 import React from "react";
-import { calculateLeaderboardStats, getTopUsers } from "@/lib/leaderboard-utils"; 
+import { calculateLeaderboardStats } from "@/lib/leaderboard-utils";
 import type { LeaderboardEntry } from "@/lib/utils";
 
-export default function LeaderboardStats({ data }: { data: LeaderboardEntry[] }) {
-    const stats = calculateLeaderboardStats(getTopUsers(data, 50));
+interface LeaderboardStatsProps {
+  data: LeaderboardEntry[];
+}
 
-    const avgBadgesFormatted = typeof stats.averageSkillBadges === 'number' && !isNaN(stats.averageSkillBadges)
-        ? stats.averageSkillBadges.toFixed(1)
-        : "-";
+export default function LeaderboardStats({ data }: LeaderboardStatsProps) {
+  // Compute stats across the entire dataset
+  const stats = calculateLeaderboardStats(data);
 
-    const avgGamesFormatted = typeof stats.averageArcadeGames === 'number' && !isNaN(stats.averageArcadeGames)
-        ? stats.averageArcadeGames.toFixed(1)
-        : (stats.averageArcadeGames || "-");
+  const avgBadgesFormatted =
+    typeof stats.averageSkillBadges === "number" && !isNaN(stats.averageSkillBadges)
+      ? stats.averageSkillBadges.toFixed(1)
+      : "-";
 
-    return (
-        <div className="grid grid-cols-2 gap-4">
-            {[
-                { t: "Participants", v: stats.totalUsers, d: "Top 50" },
-                { t: "Completed", v: stats.completedUsers, d: "All targets" },
-                { t: "Avg Badges", v: avgBadgesFormatted, d: "Per user" },
-                { t: "Avg Games", v: avgGamesFormatted, d: "Per user" },
-            ].map((s, i) => (
-                <div key={i} className="p-3 border border-[#E0E0E0] dark:border-[#333333] font-mono">
-                    <div className="text-xl font-bold text-foreground">{s.v}</div>
-                    <div className="text-[10px] uppercase font-bold text-muted-foreground mt-1 tracking-wider">{s.t}</div>
-                    <div className="mt-1 text-[10px] text-muted-foreground">{s.d}</div>
-                </div>
-            ))}
+  const avgGamesFormatted =
+    typeof stats.averageArcadeGames === "number" && !isNaN(stats.averageArcadeGames)
+      ? stats.averageArcadeGames.toFixed(1)
+      : (stats.averageArcadeGames || "-");
+
+  const statCards = [
+    {
+      label: "Total Participants",
+      value: stats.totalUsers,
+      subtext: "Enrolled contenders",
+    },
+    {
+      label: "Completed All Targets",
+      value: stats.completedUsers,
+      subtext: stats.completedUsers === "-" ? "Still searching for the leaders..." : "Full program completion",
+    },
+    {
+      label: "Avg Skill Badges",
+      value: avgBadgesFormatted,
+      subtext: "Per participant",
+    },
+    {
+      label: "Avg Arcade Games",
+      value: avgGamesFormatted,
+      subtext: avgGamesFormatted === "-" ? "Still searching for the leaders..." : "Per participant",
+    },
+  ];
+
+  return (
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 my-5">
+      {statCards.map((card, i) => (
+        <div
+          key={i}
+          className="rounded-2xl bg-white border border-[#E8E5DD] p-4 flex flex-col justify-between shadow-2xs hover:border-[#DCD8EF] transition-colors"
+        >
+          <div className="text-[11px] font-bold uppercase text-[#888591] tracking-wider">
+            {card.label}
+          </div>
+
+          <div className="text-2xl sm:text-3xl font-extrabold text-[#171525] my-1.5 tracking-tight">
+            {card.value}
+          </div>
+
+          <div className="text-xs text-[#888591] font-medium">
+            {card.subtext}
+          </div>
         </div>
-    );
+      ))}
+    </div>
+  );
 }
