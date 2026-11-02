@@ -25,12 +25,29 @@ export default function Home() {
     const fetchLeaderboard = useCallback(async () => {
         try {
             setDataLoading(true);
-            const res = await fetch("/api/leaderboard");
-            if (res.ok) {
-                const { entries, frozenUsers: frozen } = await res.json();
-                setLeaderboardData(entries || []);
-                setFrozenUsers(frozen || {});
+            const [lbRes, authRes] = await Promise.all([
+                fetch("/api/leaderboard"),
+                fetch("/api/init", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ action: "verify" }),
+                }).catch(() => null),
+            ]);
+
+            if (lbRes.ok) {
+                const data = await lbRes.json();
+                setLeaderboardData(data.entries || []);
+                setFrozenUsers(data.frozenUsers || {});
             }
+
+            if (authRes && authRes.ok) {
+                const authData = await authRes.json();
+                if (authData?.isAdmin) {
+                    setIsAdmin(true);
+                }
+            }
+        } catch (err) {
+            console.error("Failed to load leaderboard:", err);
         } finally {
             setDataLoading(false);
         }
@@ -49,10 +66,13 @@ export default function Home() {
             if (res.ok) {
                 const data = await res.json();
                 setLeaderboardData(data.entries);
-                setFrozenUsers(data.frozenUsers);
+                setFrozenUsers(data.frozenUsers || {});
             } else {
-                alert("Save failed");
+                const errData = await res.json().catch(() => null);
+                alert(`Save failed: ${errData?.error || "Unknown server error"}`);
             }
+        } catch (err: any) {
+            alert(`Save failed: ${err?.message || "Network error"}`);
         } finally {
             setDataSaving(false);
         }
@@ -66,19 +86,57 @@ export default function Home() {
 
     const sortedLeaderboardData = useMemo(() => {
         return [...leaderboardData].sort((a: any, b: any) => {
-            const valA = a[sortConfig.key];
-            const valB = b[sortConfig.key];
-            if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
-            if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
+            let valA = a[sortConfig.key];
+            let valB = b[sortConfig.key];
+
+            // Resolve property aliases if key wasn't found directly
+            if (valA === undefined) {
+                if (sortConfig.key === 'User Name') valA = a.userName;
+                else if (sortConfig.key === '# of Skill Badges Completed') valA = a.skillBadgesCompleted;
+                else if (sortConfig.key === '# of Arcade Games Completed') valA = a.arcadeGamesCompleted;
+            }
+            if (valB === undefined) {
+                if (sortConfig.key === 'User Name') valB = b.userName;
+                else if (sortConfig.key === '# of Skill Badges Completed') valB = b.skillBadgesCompleted;
+                else if (sortConfig.key === '# of Arcade Games Completed') valB = b.arcadeGamesCompleted;
+            }
+
+            // Normalize missing or non-comparable values
+            const isNullOrUnavailable = (v: any) => v === null || v === undefined || v === "-" || v === "";
+            const isANull = isNullOrUnavailable(valA);
+            const isBNull = isNullOrUnavailable(valB);
+
+            if (isANull && isBNull) return 0;
+            if (isANull) return 1;
+            if (isBNull) return -1;
+
+            // Numeric comparison
+            const numA = typeof valA === 'number' ? valA : Number(valA);
+            const numB = typeof valB === 'number' ? valB : Number(valB);
+
+            if (!isNaN(numA) && !isNaN(numB) && typeof valA !== 'string' || (sortConfig.key === 'rank' || sortConfig.key.includes('Completed'))) {
+                if (!isNaN(numA) && !isNaN(numB)) {
+                    return sortConfig.direction === 'asc' ? numA - numB : numB - numA;
+                }
+            }
+
+            // String comparison
+            const strA = String(valA || "").toLowerCase();
+            const strB = String(valB || "").toLowerCase();
+            if (strA < strB) return sortConfig.direction === 'asc' ? -1 : 1;
+            if (strA > strB) return sortConfig.direction === 'asc' ? 1 : -1;
             return 0;
         });
     }, [leaderboardData, sortConfig]);
 
     const filteredLeaderboardData = useMemo(() => {
-        return sortedLeaderboardData.filter(user =>
-            user["User Name"].toLowerCase().includes(searchQuery.toLowerCase()) ||
-            user["User Email"].toLowerCase().includes(searchQuery.toLowerCase())
-        );
+        const query = searchQuery.trim().toLowerCase();
+        if (!query) return sortedLeaderboardData;
+        return sortedLeaderboardData.filter(user => {
+            const name = (user["User Name"] || user.userName || "").toLowerCase();
+            const email = (user["User Email"] || user.email || "").toLowerCase();
+            return name.includes(query) || email.includes(query);
+        });
     }, [sortedLeaderboardData, searchQuery]);
 
     const visibleLeaderboardData = useMemo(() => {

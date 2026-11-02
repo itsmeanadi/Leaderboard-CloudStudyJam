@@ -3,30 +3,31 @@ import { connectToDatabase } from '@/lib/db';
 
 export async function GET() {
   try {
-    console.log('Testing database connection...');
     const startTime = Date.now();
-    
-    await connectToDatabase();
-    
-    const endTime = Date.now();
-    console.log(`Database connection successful in ${endTime - startTime}ms`);
-    
+    const { client, error } = await connectToDatabase();
+    const duration = `${Date.now() - startTime}ms`;
+
+    if (!client) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: error || 'Database connection unavailable',
+          duration 
+        },
+        { status: 503 }
+      );
+    }
+
     return NextResponse.json({ 
       success: true, 
       message: 'Database connection successful',
-      duration: `${endTime - startTime}ms`
+      duration
     });
   } catch (error: any) {
-    console.error('Database connection failed:', error);
     return NextResponse.json(
       { 
         success: false, 
-        error: 'Database connection failed',
-        details: {
-          name: error.name,
-          message: error.message,
-          stack: error.stack
-        }
+        error: error?.message || 'Database connection failed'
       },
       { status: 500 }
     );

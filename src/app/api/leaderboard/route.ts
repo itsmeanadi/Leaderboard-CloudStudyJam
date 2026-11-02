@@ -7,83 +7,101 @@ import {
   getInMemoryEntries,
   getInMemoryFrozenUsers,
   setInMemoryEntries,
-  setInMemoryFrozenUsers
+  setInMemoryFrozenUsers,
+  isProductionEnvironment
 } from '@/lib/db';
+import { verifyAdminAuth } from '@/lib/auth';
+
+function sanitizeEntryForResponse(entry: any): LeaderboardEntry {
+  const userName = entry.userName || entry['User Name'] || '';
+  const email = (entry.email || entry['User Email'] || '').toLowerCase().trim();
+  const rank = typeof entry.rank === 'number' ? entry.rank : parseInt(entry.rank, 10) || 0;
+  
+  const skillBadgesCompleted = entry.skillBadgesCompleted !== undefined && entry.skillBadgesCompleted !== null
+    ? (typeof entry.skillBadgesCompleted === 'number' ? entry.skillBadgesCompleted : parseInt(entry.skillBadgesCompleted, 10) || 0)
+    : (entry['# of Skill Badges Completed'] !== undefined ? parseInt(entry['# of Skill Badges Completed'], 10) || 0 : 0);
+
+  const arcadeGamesCompleted = entry.arcadeGamesCompleted !== undefined
+    ? entry.arcadeGamesCompleted
+    : (entry['# of Arcade Games Completed'] !== undefined && entry['# of Arcade Games Completed'] !== null && entry['# of Arcade Games Completed'] !== '-'
+        ? (typeof entry['# of Arcade Games Completed'] === 'number' ? entry['# of Arcade Games Completed'] : parseInt(entry['# of Arcade Games Completed'], 10) || null)
+        : null);
+
+  const skillsProfileUrl = entry.skillsProfileUrl || entry['Google Cloud Skills Boost Profile URL'] || null;
+  const developerProfileUrl = entry.developerProfileUrl || null;
+  const allCompleted = entry.allCompleted || entry['All Skill Badges & Games Completed'] || null;
+
+  return {
+    rank,
+    userName,
+    email,
+    skillsProfileUrl,
+    skillsProfileStatus: entry.skillsProfileStatus || null,
+    developerProfileUrl,
+    developerProfileStatus: entry.developerProfileStatus || null,
+    accessCodeRedemptionStatus: entry.accessCodeRedemptionStatus || null,
+    milestoneCompleted: entry.milestoneCompleted || null,
+    gearDigitalBadges: entry.gearDigitalBadges || null,
+    skillBadgesCompleted,
+    skillBadgesCompletedNames: entry.skillBadgesCompletedNames || null,
+    arcadeGamesCompleted,
+    allCompleted,
+
+    // Legacy property aliases for UI bindings
+    'User Name': userName,
+    'User Email': email,
+    '# of Skill Badges Completed': skillBadgesCompleted,
+    '# of Arcade Games Completed': arcadeGamesCompleted,
+    'All Skill Badges & Games Completed': allCompleted,
+    'Google Cloud Skills Boost Profile URL': skillsProfileUrl,
+  };
+}
 
 export async function GET() {
   try {
-    console.log('GET /api/leaderboard called');
-    
-    const isVercel = !!process.env.VERCEL;
-    console.log('Running on Vercel:', isVercel);
-    
-    const mongoUri = process.env.MONGODB_URI;
-    console.log('MONGODB_URI set:', !!mongoUri);
-    if (mongoUri) {
-      console.log('MongoDB URI type:', mongoUri.includes('mongodb.net') ? 'Atlas' : 'Local');
-    }
-    
-    console.log('Connecting to database...');
-    const dbConnection = await connectToDatabase();
-    const useInMemory = !dbConnection.db;
-    console.log('Using in-memory storage:', useInMemory);
-    
-    if (useInMemory) {
-      console.log('Returning in-memory data');
+    const { db, error: dbError } = await connectToDatabase();
+
+    if (!db) {
+      if (isProductionEnvironment()) {
+        return NextResponse.json(
+          { error: 'Database unavailable: MongoDB is required in production.', details: dbError },
+          { status: 503 }
+        );
+      }
+
       return NextResponse.json({
-        entries: getInMemoryEntries(),
-        frozenUsers: getInMemoryFrozenUsers()
+        entries: getInMemoryEntries().map(sanitizeEntryForResponse),
+        frozenUsers: getInMemoryFrozenUsers(),
       });
     }
-    
+
     const leaderboardCollection = await getLeaderboardCollection();
     const frozenUsersCollection = await getFrozenUsersCollection();
-    
-    console.log('Fetching leaderboard entries...');
-    const entries = await (leaderboardCollection.find({}).sort({ rank: 1 }) as any).toArray();
-    console.log(`Found ${entries.length} leaderboard entries`);
-    
-    console.log('Fetching frozen users...');
+
+    const rawEntries = await (leaderboardCollection.find({}).sort({ rank: 1 }) as any).toArray();
     const frozenUsersArray = await (frozenUsersCollection.find({}) as any).toArray();
-    console.log(`Found ${frozenUsersArray.length} frozen users`);
-    
+
     const frozenUsers: Record<string, FrozenUser> = {};
     frozenUsersArray.forEach((user: any) => {
-      frozenUsers[user.email] = {
-        rank: user.rank,
-        timestamp: user.timestamp
-      };
+      const email = (user.email || '').toLowerCase().trim();
+      if (email) {
+        frozenUsers[email] = {
+          rank: user.rank,
+          timestamp: user.timestamp,
+        };
+      }
     });
-    
-    console.log('Returning response...');
+
+    const entries = rawEntries.map(sanitizeEntryForResponse);
+
     return NextResponse.json({
-      entries: entries.map((entry: any) => ({
-        ...entry,
-        _id: undefined,
-        createdAt: undefined
-      })),
-      frozenUsers
+      entries,
+      frozenUsers,
     });
   } catch (error: any) {
-    console.error('Error fetching leaderboard data:', error);
-    console.error('Error name:', error.name);
-    console.error('Error message:', error.message);
-    console.error('Error stack:', error.stack);
-    
-    const errorDetails = {
-      name: error.name,
-      message: error.message,
-      stack: error.stack,
-      isVercel: !!process.env.VERCEL,
-      hasMongoUri: !!process.env.MONGODB_URI,
-      mongoUriType: process.env.MONGODB_URI?.includes('mongodb.net') ? 'Atlas' : 'Local',
-    };
-    
+    console.error('Error fetching leaderboard data:', error?.message || error);
     return NextResponse.json(
-      { 
-        error: 'Failed to fetch leaderboard data',
-        details: errorDetails
-      },
+      { error: 'Failed to fetch leaderboard data' },
       { status: 500 }
     );
   }
@@ -91,79 +109,140 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    // 1. Verify admin authentication
+    if (!verifyAdminAuth(request)) {
+      return NextResponse.json(
+        { error: 'Unauthorized: Admin authentication required.' },
+        { status: 401 }
+      );
+    }
+
     const body = await request.json();
     const { entries, frozenUsers: newFrozenUsers } = body;
-    
-    console.log('POST /api/leaderboard called');
-    
-    const dbConnection = await connectToDatabase();
-    const useInMemory = !dbConnection.db;
-    console.log('Using in-memory storage:', useInMemory);
-    
-    if (useInMemory) {
-      setInMemoryEntries(entries || []);
-      setInMemoryFrozenUsers(newFrozenUsers || {});
-      
-      return NextResponse.json({
-        message: 'Leaderboard data updated successfully (in-memory)',
-        entries: getInMemoryEntries(),
-        frozenUsers: getInMemoryFrozenUsers()
+
+    // 2. Validate incoming data before any delete/modify operations
+    if (!entries || !Array.isArray(entries)) {
+      return NextResponse.json(
+        { error: 'Invalid payload: "entries" must be an array.' },
+        { status: 400 }
+      );
+    }
+
+    if (entries.length === 0) {
+      return NextResponse.json(
+        { error: 'Invalid payload: "entries" cannot be empty.' },
+        { status: 400 }
+      );
+    }
+
+    const seenEmails = new Set<string>();
+    const sanitizedEntries: any[] = [];
+
+    for (let i = 0; i < entries.length; i++) {
+      const item = entries[i];
+      const userName = item.userName || item['User Name'];
+      const rawEmail = item.email || item['User Email'];
+      const email = (rawEmail || '').toLowerCase().trim();
+
+      if (!userName || typeof userName !== 'string') {
+        return NextResponse.json(
+          { error: `Validation error at record ${i + 1}: Participant name is missing.` },
+          { status: 400 }
+        );
+      }
+
+      if (!email || !email.includes('@')) {
+        return NextResponse.json(
+          { error: `Validation error at record ${i + 1}: Invalid email address for "${userName}".` },
+          { status: 400 }
+        );
+      }
+
+      if (seenEmails.has(email)) {
+        return NextResponse.json(
+          { error: `Validation error: Duplicate email address detected: "${email}".` },
+          { status: 400 }
+        );
+      }
+      seenEmails.add(email);
+
+      // Sanitize fields and ensure no raw access codes are stored or logged
+      const sanitized = sanitizeEntryForResponse(item);
+      sanitizedEntries.push({
+        ...sanitized,
+        email,
+        createdAt: new Date(),
       });
     }
-    
+
+    // 3. Connect to database
+    const { db, error: dbError } = await connectToDatabase();
+
+    if (!db) {
+      if (isProductionEnvironment()) {
+        return NextResponse.json(
+          { error: 'Database unavailable: MongoDB is required in production.', details: dbError },
+          { status: 503 }
+        );
+      }
+
+      // Local development in-memory fallback
+      setInMemoryEntries(sanitizedEntries);
+      if (newFrozenUsers && typeof newFrozenUsers === 'object') {
+        setInMemoryFrozenUsers(newFrozenUsers);
+      }
+
+      return NextResponse.json({
+        message: 'Leaderboard data updated successfully (local in-memory fallback)',
+        entries: getInMemoryEntries().map(sanitizeEntryForResponse),
+        frozenUsers: getInMemoryFrozenUsers(),
+      });
+    }
+
     const leaderboardCollection = await getLeaderboardCollection();
     const frozenUsersCollection = await getFrozenUsersCollection();
-    
+
+    // 4. Safely replace data only after validation passed
     await (leaderboardCollection.deleteMany({}) as any);
-    await (frozenUsersCollection.deleteMany({}) as any);
-    
-    if (entries && entries.length > 0) {
-      const entriesWithEmail = entries.map((entry: LeaderboardEntry) => ({
-        ...entry,
-        email: entry["User Email"],
-        createdAt: new Date()
+    await (leaderboardCollection.insertMany(sanitizedEntries) as any);
+
+    if (newFrozenUsers && typeof newFrozenUsers === 'object') {
+      await (frozenUsersCollection.deleteMany({}) as any);
+      const frozenUsersArray = Object.keys(newFrozenUsers).map((emailKey) => ({
+        email: emailKey.toLowerCase().trim(),
+        rank: newFrozenUsers[emailKey].rank,
+        timestamp: newFrozenUsers[emailKey].timestamp || new Date().toISOString(),
+        createdAt: new Date(),
       }));
-      
-      await (leaderboardCollection.insertMany(entriesWithEmail) as any);
-    }
-    
-    if (newFrozenUsers) {
-      const frozenUsersArray = Object.keys(newFrozenUsers).map(email => ({
-        email,
-        rank: newFrozenUsers[email].rank,
-        timestamp: newFrozenUsers[email].timestamp,
-        createdAt: new Date()
-      }));
-      
+
       if (frozenUsersArray.length > 0) {
         await (frozenUsersCollection.insertMany(frozenUsersArray) as any);
       }
     }
-    
+
     const updatedEntries = await (leaderboardCollection.find({}).sort({ rank: 1 }) as any).toArray();
     const updatedFrozenUsersArray = await (frozenUsersCollection.find({}) as any).toArray();
-    
+
     const updatedFrozenUsers: Record<string, FrozenUser> = {};
     updatedFrozenUsersArray.forEach((user: any) => {
-      updatedFrozenUsers[user.email] = {
-        rank: user.rank,
-        timestamp: user.timestamp
-      };
+      const email = (user.email || '').toLowerCase().trim();
+      if (email) {
+        updatedFrozenUsers[email] = {
+          rank: user.rank,
+          timestamp: user.timestamp,
+        };
+      }
     });
-    
+
     return NextResponse.json({
       message: 'Leaderboard data updated successfully',
-      entries: updatedEntries.map((entry: any) => ({
-        ...entry,
-        _id: undefined,
-        createdAt: undefined
-      })),
-      frozenUsers: updatedFrozenUsers
+      entries: updatedEntries.map(sanitizeEntryForResponse),
+      frozenUsers: updatedFrozenUsers,
     });
   } catch (error: any) {
-    console.error('Error updating leaderboard data:', error);
+    console.error('Error updating leaderboard data:', error?.message || error);
     return NextResponse.json(
-      { error: 'Failed to update leaderboard data', details: error.message || 'Unknown error' },
+      { error: error?.message || 'Failed to update leaderboard data' },
       { status: 500 }
     );
   }
@@ -171,68 +250,83 @@ export async function POST(request: Request) {
 
 export async function PUT(request: Request) {
   try {
-    const body = await request.json();
-    const { email, rank } = body;
-    
-    if (!email || rank === undefined) {
+    // 1. Verify admin authentication
+    if (!verifyAdminAuth(request)) {
       return NextResponse.json(
-        { error: 'Email and rank are required' },
+        { error: 'Unauthorized: Admin authentication required.' },
+        { status: 401 }
+      );
+    }
+
+    const body = await request.json();
+    const { email: rawEmail, rank } = body;
+    const email = (rawEmail || '').toLowerCase().trim();
+
+    if (!email || typeof rank !== 'number' || isNaN(rank) || rank < 1) {
+      return NextResponse.json(
+        { error: 'Valid email and numeric rank (>= 1) are required.' },
         { status: 400 }
       );
     }
-    
-    console.log('PUT /api/leaderboard/freeze called');
-    
-    const dbConnection = await connectToDatabase();
-    const useInMemory = !dbConnection.db;
-    console.log('Using in-memory storage:', useInMemory);
-    
-    if (useInMemory) {
+
+    const { db, error: dbError } = await connectToDatabase();
+
+    if (!db) {
+      if (isProductionEnvironment()) {
+        return NextResponse.json(
+          { error: 'Database unavailable: MongoDB is required in production.', details: dbError },
+          { status: 503 }
+        );
+      }
+
       const frozenUsers = getInMemoryFrozenUsers();
       frozenUsers[email] = {
         rank,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       };
       setInMemoryFrozenUsers(frozenUsers);
-      
+
       return NextResponse.json({
         message: 'User rank frozen successfully (in-memory)',
-        frozenUsers: getInMemoryFrozenUsers()
+        frozenUsers: getInMemoryFrozenUsers(),
       });
     }
-    
+
     const frozenUsersCollection = await getFrozenUsersCollection();
-    
+
     await (frozenUsersCollection.updateOne(
       { email },
-      { 
-        $set: { 
+      {
+        $set: {
           email,
           rank,
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+          createdAt: new Date(),
+        },
       },
       { upsert: true }
     ) as any);
-    
+
     const frozenUsersArray = await (frozenUsersCollection.find({}) as any).toArray();
-    
     const frozenUsers: Record<string, FrozenUser> = {};
     frozenUsersArray.forEach((user: any) => {
-      frozenUsers[user.email] = {
-        rank: user.rank,
-        timestamp: user.timestamp
-      };
+      const userEmail = (user.email || '').toLowerCase().trim();
+      if (userEmail) {
+        frozenUsers[userEmail] = {
+          rank: user.rank,
+          timestamp: user.timestamp,
+        };
+      }
     });
-    
+
     return NextResponse.json({
       message: 'User rank frozen successfully',
-      frozenUsers
+      frozenUsers,
     });
   } catch (error: any) {
-    console.error('Error freezing user rank:', error);
+    console.error('Error freezing user rank:', error?.message || error);
     return NextResponse.json(
-      { error: 'Failed to freeze user rank' },
+      { error: error?.message || 'Failed to freeze user rank' },
       { status: 500 }
     );
   }

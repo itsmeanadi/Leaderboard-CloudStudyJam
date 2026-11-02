@@ -31,11 +31,26 @@ export default function AdminPanel({ isAdmin, setIsAdmin, onCSVUpload, onLogout 
                 setLoginOpen(false);
                 setPassword("");
             } else {
-                setError("Invalid credentials");
+                const data = await res.json().catch(() => null);
+                setError(data?.error || "Invalid credentials");
             }
         } catch {
             setError("Login failed");
         }
+    };
+
+    const handleLogout = async () => {
+        try {
+            await fetch('/api/init', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'logout' })
+            });
+        } catch (err) {
+            console.error("Logout request failed:", err);
+        }
+        setIsAdmin(false);
+        onLogout();
     };
 
     const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -46,9 +61,9 @@ export default function AdminPanel({ isAdmin, setIsAdmin, onCSVUpload, onLogout 
         try {
             const data = await uploadCSV(file);
             await onCSVUpload(data);
-        } catch (error) {
+        } catch (error: any) {
             console.error("Upload error:", error);
-            alert("Upload failed. Check console.");
+            alert(`Upload failed: ${error?.message || "Check console"}`);
         } finally {
             setUploading(false);
             if (fileInputRef.current) fileInputRef.current.value = "";
@@ -67,7 +82,7 @@ export default function AdminPanel({ isAdmin, setIsAdmin, onCSVUpload, onLogout 
                     className="border border-[#E0E0E0] dark:border-[#333333] text-xs font-mono file:bg-transparent file:border-0 file:text-xs file:font-bold file:uppercase cursor-pointer p-1 w-48"
                 />
                 <button 
-                    onClick={() => { setIsAdmin(false); onLogout(); }} 
+                    onClick={handleLogout} 
                     className="border border-[#E0E0E0] dark:border-[#333333] text-xs font-mono font-bold uppercase px-3 py-1 hover:bg-foreground hover:text-background"
                 >
                     Logout
